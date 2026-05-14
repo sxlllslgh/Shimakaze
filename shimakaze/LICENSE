@@ -1,0 +1,24 @@
+Shimakaze License Notice
+
+SPDX-License-Identifier: GPL-3.0-or-later
+
+Copyright (c) 2026 Shimakaze contributors.
+
+The original source code written for Shimakaze is licensed under the GNU
+General Public License version 3.0 or, at your option, any later version,
+unless a file explicitly states otherwise.
+The license text is available at https://www.gnu.org/licenses/gpl-3.0.txt.
+
+Shimakaze builds and links third-party source dependencies that remain under
+their own licenses:
+
+- KCP: MIT License
+- Boost: Boost Software License 1.0
+- Snappy: BSD-style license
+- Crypto++: Boost Software License 1.0 and public-domain components
+- smux behavior reference: MIT License
+- kcp-go FEC packet layout reference: MIT License
+- QPP: GNU General Public License version 3.0
+
+When redistributing Shimakaze source or binaries, keep the copyright, license,
+and notice terms required by each dependency and referenced project.

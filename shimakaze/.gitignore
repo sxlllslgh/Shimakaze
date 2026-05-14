@@ -1,0 +1,7 @@
+build*/
+out/
+*.user
+*.suo
+*.swp
+*.log
+compile_commands.json

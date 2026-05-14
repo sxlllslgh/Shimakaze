@@ -1,0 +1,77 @@
+﻿name: Shimakaze Build
+
+on:
+  push:
+    paths:
+      - "kcp/**"
+      - "shimakaze/**"
+      - ".github/workflows/shimakaze-build.yml"
+  pull_request:
+    paths:
+      - "kcp/**"
+      - "shimakaze/**"
+      - ".github/workflows/shimakaze-build.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: ${{ matrix.artifact }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - artifact: shimakaze-windows-x64
+            runner: windows-2022
+          - artifact: shimakaze-windows-arm64
+            runner: windows-11-arm
+          - artifact: shimakaze-linux-x64
+            runner: ubuntu-24.04
+          - artifact: shimakaze-linux-arm64
+            runner: ubuntu-24.04-arm
+          - artifact: shimakaze-macos-x64
+            runner: macos-15-intel
+          - artifact: shimakaze-macos-arm64
+            runner: macos-14
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Install build tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install cmake==4.3.2 ninja
+          cmake --version
+          ninja --version
+
+      - name: Configure
+        run: >
+          cmake
+          -S shimakaze
+          -B shimakaze/build
+          -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DSHIMAKAZE_PREFER_LOCAL_KCP=ON
+
+      - name: Build
+        run: cmake --build shimakaze/build --config Release --parallel
+
+      - name: Test
+        run: ctest --test-dir shimakaze/build --output-on-failure -C Release
+
+      - name: Install
+        run: cmake --install shimakaze/build --config Release --prefix dist/${{ matrix.artifact }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: dist/${{ matrix.artifact }}
+          if-no-files-found: error

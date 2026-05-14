@@ -1,0 +1,23 @@
+# Local reference and scratch directories
+kcp[t]un/
+.tmp-*/
+
+# Build outputs
+build/
+build*/
+out/
+dist/
+shimakaze/build/
+shimakaze/build*/
+
+# CMake/editor noise
+compile_commands.json
+CMakeUserPresets.json
+*.user
+*.suo
+*.swp
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
