@@ -3,12 +3,12 @@
 on:
   push:
     paths:
-      - "kcp/**"
+      - "kcp"
       - "shimakaze/**"
       - ".github/workflows/shimakaze-build.yml"
   pull_request:
     paths:
-      - "kcp/**"
+      - "kcp"
       - "shimakaze/**"
       - ".github/workflows/shimakaze-build.yml"
   release:
