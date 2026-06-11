@@ -11,6 +11,8 @@ on:
       - "kcp/**"
       - "shimakaze/**"
       - ".github/workflows/shimakaze-build.yml"
+  release:
+    types: [published]
   workflow_dispatch:
 
 permissions:
@@ -42,7 +44,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
         with:
-          submodules: true
+          submodules: recursive
+
+      - name: Update KCP submodule to latest master
+        if: github.event_name == 'release'
+        shell: bash
+        run: |
+          git submodule update --init --remote kcp
+          git -C kcp rev-parse HEAD
 
       - name: Install build tools
         run: |
