@@ -4,11 +4,13 @@ on:
   push:
     paths:
       - "kcp"
+      - ".dockerignore"
       - "shimakaze/**"
       - ".github/workflows/shimakaze-build.yml"
   pull_request:
     paths:
       - "kcp"
+      - ".dockerignore"
       - "shimakaze/**"
       - ".github/workflows/shimakaze-build.yml"
   release:
@@ -29,16 +31,26 @@ jobs:
         include:
           - artifact: shimakaze-windows-x64
             runner: windows-2022
+            static_linux: false
           - artifact: shimakaze-windows-arm64
             runner: windows-11-arm
+            static_linux: false
           - artifact: shimakaze-linux-x64
             runner: ubuntu-24.04
+            static_linux: true
+            docker_platform: linux/amd64
+            elf_machine: X86-64
           - artifact: shimakaze-linux-arm64
             runner: ubuntu-24.04-arm
+            static_linux: true
+            docker_platform: linux/arm64
+            elf_machine: AArch64
           - artifact: shimakaze-macos-x64
             runner: macos-15-intel
+            static_linux: false
           - artifact: shimakaze-macos-arm64
             runner: macos-14
+            static_linux: false
 
     steps:
       - name: Checkout
@@ -54,6 +66,7 @@ jobs:
           git -C kcp rev-parse HEAD
 
       - name: Install build tools
+        if: ${{ !matrix.static_linux }}
         run: |
           python -m pip install --upgrade pip
           python -m pip install cmake==4.3.2 ninja
@@ -61,6 +74,7 @@ jobs:
           ninja --version
 
       - name: Configure
+        if: ${{ !matrix.static_linux }}
         run: >
           cmake
           -S shimakaze
@@ -70,17 +84,84 @@ jobs:
           -DSHIMAKAZE_PREFER_LOCAL_KCP=ON
 
       - name: Build
+        if: ${{ !matrix.static_linux }}
         run: cmake --build shimakaze/build --config Release --parallel
 
       - name: Test
+        if: ${{ !matrix.static_linux }}
         run: ctest --test-dir shimakaze/build --output-on-failure -C Release
 
       - name: Install
+        if: ${{ !matrix.static_linux }}
         run: cmake --install shimakaze/build --config Release --prefix dist/${{ matrix.artifact }}
 
-      - name: Upload artifact
+      - name: Build portable static Linux binaries
+        if: matrix.static_linux
+        shell: bash
+        run: |
+          set -euo pipefail
+          DOCKER_BUILDKIT=1 docker build \
+            --platform "${{ matrix.docker_platform }}" \
+            --file shimakaze/docker/static-linux.Dockerfile \
+            --output "type=local,dest=dist/${{ matrix.artifact }}" \
+            .
+
+      - name: Verify portable static Linux binaries
+        if: matrix.static_linux
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          for binary in client server; do
+            path="dist/${{ matrix.artifact }}/bin/${binary}"
+            file "${path}"
+            readelf -h "${path}" | grep -F "${{ matrix.elf_machine }}"
+
+            if readelf -l "${path}" | grep -q "Requesting program interpreter"; then
+              echo "${path} unexpectedly has a dynamic ELF interpreter" >&2
+              exit 1
+            fi
+
+            if readelf -d "${path}" | grep -q "(NEEDED)"; then
+              echo "${path} unexpectedly has dynamic dependencies" >&2
+              exit 1
+            fi
+
+            "${path}" --version
+          done
+
+      - name: Package portable static Linux binaries
+        if: matrix.static_linux
+        shell: bash
+        run: |
+          set -euo pipefail
+          tar \
+            -C dist \
+            -czf "dist/${{ matrix.artifact }}.tar.gz" \
+            "${{ matrix.artifact }}"
+
+          mkdir -p dist/archive-check
+          tar \
+            -C dist/archive-check \
+            -xzf "dist/${{ matrix.artifact }}.tar.gz"
+          test -x "dist/archive-check/${{ matrix.artifact }}/bin/client"
+          test -x "dist/archive-check/${{ matrix.artifact }}/bin/server"
+          "dist/archive-check/${{ matrix.artifact }}/bin/client" --version
+          "dist/archive-check/${{ matrix.artifact }}/bin/server" --version
+
+      - name: Upload native artifact
+        if: ${{ !matrix.static_linux }}
         uses: actions/upload-artifact@v6
         with:
           name: ${{ matrix.artifact }}
           path: dist/${{ matrix.artifact }}
           if-no-files-found: error
+
+      - name: Upload portable static Linux artifact
+        if: matrix.static_linux
+        uses: actions/upload-artifact@v6
+        with:
+          name: ${{ matrix.artifact }}
+          path: dist/${{ matrix.artifact }}.tar.gz
+          if-no-files-found: error
+          compression-level: 0

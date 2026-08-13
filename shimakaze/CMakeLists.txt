@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 4.3)
+cmake_minimum_required(VERSION 3.24)
 
 project(Shimakaze
     VERSION 0.1.0
@@ -9,6 +9,21 @@ project(Shimakaze
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+
+option(SHIMAKAZE_STATIC_LINK
+    "Build fully static Linux executables (intended for portable musl releases)"
+    OFF
+)
+
+if(SHIMAKAZE_STATIC_LINK)
+    if(NOT CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        message(FATAL_ERROR "SHIMAKAZE_STATIC_LINK is supported only on Linux")
+    endif()
+    set(BUILD_SHARED_LIBS OFF CACHE BOOL
+        "Build static dependency libraries when SHIMAKAZE_STATIC_LINK is enabled"
+        FORCE
+    )
+endif()
 
 include(CTest)
 include(GNUInstallDirs)
@@ -73,6 +88,11 @@ set_target_properties(shimakaze_client PROPERTIES OUTPUT_NAME client)
 add_executable(shimakaze_server src/server_main.cpp)
 target_link_libraries(shimakaze_server PRIVATE shimakaze_core)
 set_target_properties(shimakaze_server PROPERTIES OUTPUT_NAME server)
+
+if(SHIMAKAZE_STATIC_LINK)
+    target_link_options(shimakaze_client PRIVATE -static)
+    target_link_options(shimakaze_server PRIVATE -static)
+endif()
 
 if(BUILD_TESTING)
     add_executable(shimakaze_config_tests tests/config_tests.cpp)

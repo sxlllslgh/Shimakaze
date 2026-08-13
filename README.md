@@ -6,13 +6,13 @@
   <p>
     <a href="../.github/workflows/shimakaze-build.yml"><img alt="GitHub Actions" src="https://img.shields.io/badge/CI-GitHub_Actions-2088FF?logo=githubactions&logoColor=white"></a>
     <img alt="C++23" src="https://img.shields.io/badge/C%2B%2B-23-00599C?logo=cplusplus&logoColor=white">
-    <img alt="CMake 4.3+" src="https://img.shields.io/badge/CMake-4.3%2B-064F8C?logo=cmake&logoColor=white">
+    <img alt="CMake 3.24+" src="https://img.shields.io/badge/CMake-3.24%2B-064F8C?logo=cmake&logoColor=white">
     <img alt="License GPL-3.0-or-later" src="https://img.shields.io/badge/license-GPL--3.0--or--later-A42E2B">
     <img alt="KCP source" src="https://img.shields.io/badge/KCP-source_master-22A699">
     <img alt="Boost 1.91" src="https://img.shields.io/badge/Boost-1.91.0-DF5C43?logo=boost&logoColor=white">
     <img alt="Snappy 1.2.2" src="https://img.shields.io/badge/Snappy-1.2.2-34A853">
     <img alt="Crypto++ 8.9.0" src="https://img.shields.io/badge/Crypto%2B%2B-8.9.0-8A2BE2">
-    <img alt="Platforms" src="https://img.shields.io/badge/Windows%20%7C%20Linux%20%7C%20macOS-x64%20%7C%20ARM64%20%7C%20MIPS-0A66C2">
+    <img alt="Platforms" src="https://img.shields.io/badge/Windows%20%7C%20Linux%20%7C%20macOS-x64%20%7C%20ARM64-0A66C2">
   </p>
 
   <p>
@@ -27,6 +27,25 @@
   </p>
 
 </div>
+
+## OpenWrt
+
+GitHub Actions 中的 `shimakaze-linux-x64` 和 `shimakaze-linux-arm64` 使用 musl 构建为全静态 ELF，不依赖 OpenWrt 上不存在的 Ubuntu/glibc 动态加载器。下载后先解压 artifact 中的 `.tar.gz`，再按设备架构运行：
+
+```sh
+uname -m
+# x86_64  -> shimakaze-linux-x64
+# aarch64 -> shimakaze-linux-arm64
+
+tar -xzf shimakaze-linux-arm64.tar.gz
+cd shimakaze-linux-arm64
+chmod 755 bin/client bin/server
+./bin/client --version
+```
+
+必须使用 `./bin/client`（或安装到 `PATH` 后再使用 `client`）；当前目录默认不在 OpenWrt 的 `PATH` 中。现有发布物仅覆盖 x86_64 和 AArch64，ARMv7/MIPS 设备需要使用对应 target/subtarget 的 OpenWrt SDK 单独交叉编译。
+
+The Linux artifacts are fully static musl executables for x86_64 and AArch64. Run them as `./bin/client`, not bare `client`; other OpenWrt architectures require a matching OpenWrt SDK build.
 
 ## 中文
 

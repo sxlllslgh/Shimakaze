@@ -27,26 +27,22 @@ set(_SHIMAKAZE_BUILD_TESTING "${BUILD_TESTING}")
 set(BUILD_TESTING OFF CACHE BOOL "Disable dependency tests" FORCE)
 
 if(SHIMAKAZE_PREFER_LOCAL_KCP AND EXISTS "${SHIMAKAZE_KCP_SOURCE_DIR}/ikcp.c")
-    add_subdirectory("${SHIMAKAZE_KCP_SOURCE_DIR}" "${CMAKE_BINARY_DIR}/_deps/kcp-build" EXCLUDE_FROM_ALL)
+    set(_SHIMAKAZE_EFFECTIVE_KCP_SOURCE_DIR "${SHIMAKAZE_KCP_SOURCE_DIR}")
 else()
     FetchContent_Declare(kcp
         GIT_REPOSITORY "${SHIMAKAZE_KCP_GIT_REPOSITORY}"
         GIT_TAG "${SHIMAKAZE_KCP_GIT_TAG}"
         GIT_SHALLOW TRUE
         GIT_PROGRESS TRUE
+        SOURCE_SUBDIR cmake-does-not-exist
     )
     FetchContent_MakeAvailable(kcp)
+    set(_SHIMAKAZE_EFFECTIVE_KCP_SOURCE_DIR "${kcp_SOURCE_DIR}")
 endif()
 
-if(TARGET kcp AND NOT TARGET kcp::kcp)
-    if(DEFINED kcp_SOURCE_DIR)
-        set(_SHIMAKAZE_EFFECTIVE_KCP_SOURCE_DIR "${kcp_SOURCE_DIR}")
-    else()
-        set(_SHIMAKAZE_EFFECTIVE_KCP_SOURCE_DIR "${SHIMAKAZE_KCP_SOURCE_DIR}")
-    endif()
-    target_include_directories(kcp PUBLIC "$<BUILD_INTERFACE:${_SHIMAKAZE_EFFECTIVE_KCP_SOURCE_DIR}>")
-    add_library(kcp::kcp ALIAS kcp)
-endif()
+add_library(kcp "${_SHIMAKAZE_EFFECTIVE_KCP_SOURCE_DIR}/ikcp.c")
+target_include_directories(kcp PUBLIC "$<BUILD_INTERFACE:${_SHIMAKAZE_EFFECTIVE_KCP_SOURCE_DIR}>")
+add_library(kcp::kcp ALIAS kcp)
 
 set(BUILD_TESTING "${_SHIMAKAZE_BUILD_TESTING}" CACHE BOOL "Build project tests" FORCE)
 
